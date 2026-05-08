@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ExpenseTracman — Control Your Cash</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --lime: #c6f135;
+      --dark: #0a0a0a;
+      --mid: #141414;
+      --glass: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.1);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--dark);
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── VIDEO BACKGROUND ── */
+    #bg-video {
+      position: fixed;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      opacity: 0.22;
+      filter: saturate(0) contrast(1.2);
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(10,10,10,0.75) 0%, rgba(10,10,10,0.55) 60%, rgba(198,241,53,0.08) 100%);
+      z-index: 1;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 48px;
+      height: 70px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      background: rgba(10,10,10,0.4);
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 2px;
+      color: var(--lime);
+    }
+    .logo span { color: #fff; }
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--lime); }
+
+    /* ── HERO (two-column split, fits 100vh) ── */
+    .hero {
+      position: relative; z-index: 10;
+      height: calc(100vh - 70px);   /* full viewport minus nav height */
+      margin-top: 70px;             /* push below fixed nav */
+      padding-bottom: 44px;         /* clear ticker */
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 40px;
+      align-items: center;
+      padding-left: 56px;
+      padding-right: 48px;
+    }
+    @media (max-width: 820px) {
+      .hero {
+        grid-template-columns: 1fr;
+        height: auto;
+        padding: 32px 24px 80px;
+        overflow-y: auto;
+      }
+    }
+
+    /* LEFT COL */
+    .hero-left { display: flex; flex-direction: column; justify-content: center; }
+    .eyebrow {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 3px;
+      color: var(--lime);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      opacity: 0; animation: fadeUp .6s .2s forwards;
+    }
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3rem, 6.5vw, 6rem);
+      line-height: .92;
+      letter-spacing: 1px;
+      opacity: 0; animation: fadeUp .7s .35s forwards;
+    }
+    h1 .accent { color: var(--lime); }
+    .sub {
+      margin-top: 20px;
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.55);
+      max-width: 420px;
+      line-height: 1.65;
+      opacity: 0; animation: fadeUp .7s .5s forwards;
+    }
+
+    /* STAT PILLS */
+    .stat-pills {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      margin-top: 28px;
+      opacity: 0; animation: fadeUp .7s .6s forwards;
+    }
+    .stat-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-family: 'Space Mono'; font-size: 0.65rem;
+      color: rgba(255,255,255,0.6);
+    }
+    .stat-pill strong { color: var(--lime); }
+
+    /* RIGHT COL — SIGN IN CARD */
+    .signin-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(24px);
+      border-radius: 22px;
+      padding: 30px 28px;
+      width: 100%;
+      opacity: 0; animation: fadeUp .7s .55s forwards;
+    }
+    .signin-card h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .signin-card > p {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 22px;
+    }
+    #google-signin-btn {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      padding: 15px 24px;
+      background: #fff;
+      color: #1a1a1a;
+      border: none;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    #google-signin-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(198,241,53,0.2);
+    }
+    #google-signin-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .divider hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+    .divider span { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: rgba(255,255,255,0.3); }
+
+    .features-row {
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .feat-chip {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: .5px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* ── STATS TICKER ── */
+    .ticker {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      z-index: 100;
+      background: var(--lime);
+      color: #000;
+      padding: 10px 0;
+      overflow: hidden;
+    }
+    .ticker-inner {
+      display: flex; gap: 80px;
+      white-space: nowrap;
+      animation: ticker 22s linear infinite;
+    }
+    .ticker-inner span {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── AUTH STATE ── */
+    #auth-loading { display: none; }
+    .loading-ring {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--lime);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #user-info { display: none; text-align: center; }
+    #user-info img {
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 2px solid var(--lime);
+      margin-bottom: 10px;
+    }
+    #user-info .uname { font-weight: 600; font-size: 1rem; }
+    #user-info .uemail { font-size: 0.8rem; color: rgba(255,255,255,0.45); margin-bottom: 18px; }
+
+    .btn-lime {
+      width: 100%;
+      padding: 14px;
+      background: var(--lime);
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform .15s, opacity .15s;
+    }
+    .btn-lime:hover { transform: translateY(-2px); opacity: .9; }
+
+    .btn-ghost {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      color: rgba(255,255,255,0.45);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: color .15s, border-color .15s;
+    }
+    .btn-ghost:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+    .error-msg { color: #ff6b6b; font-size: 0.82rem; text-align: center; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- VIDEO BG -->
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="https://raw.githubusercontent.com/guruadithya-boop/expense-tracman/main/138315-769163810_medium.mp4" type="video/mp4"/>
+  </video>
+  <div class="overlay"></div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">Expense<span>Tracman</span></div>
+    <div class="nav-links">
+      <a href="datain.html">Add Expense</a>
+      <a href="stat.html">Analytics</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <!-- LEFT: Text -->
+    <div class="hero-left">
+      <div class="eyebrow">⬡ AI-Powered Expense Intelligence</div>
+      <h1>TRACK.<br/>ANALYSE.<br/><span class="accent">WIN.</span></h1>
+      <p class="sub">Real-time expense tracking with Python-powered analytics, smart categorization, and actionable financial insights — all in one dashboard.</p>
+      <div class="stat-pills">
+        <div class="stat-pill">💰 Tracked <strong>₹4.2L</strong></div>
+        <div class="stat-pill">📈 Savings <strong>32%</strong></div>
+        <div class="stat-pill">🐍 Python <strong>LIVE</strong></div>
+        <div class="stat-pill">☁️ Cloud <strong>Sync</strong></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Sign In Card -->
+    <div class="signin-card">
+      <h2>Get Started</h2>
+      <p style="font-size:.8rem;color:rgba(255,255,255,.4);margin-bottom:22px;">Sign in to access your personal expense dashboard</p>
+
+      <!-- Default: Google Sign In -->
+      <div id="signin-view">
+        <button id="google-signin-btn">
+          <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+          Continue with Google
+        </button>
+        <div class="divider"><hr/><span>secure auth</span><hr/></div>
+        <div class="features-row">
+          <span class="feat-chip">🔒 Encrypted</span>
+          <span class="feat-chip">📊 Python Reports</span>
+          <span class="feat-chip">☁️ Cloud Sync</span>
+          <span class="feat-chip">📱 Mobile Ready</span>
+        </div>
+        <p class="error-msg" id="auth-error">Sign-in failed. Please try again.</p>
+      </div>
+
+      <!-- Loading -->
+      <div id="auth-loading">
+        <div class="loading-ring"></div>
+        <p style="text-align:center;font-size:.85rem;color:rgba(255,255,255,.45)">Authenticating…</p>
+      </div>
+
+      <!-- Signed In -->
+      <div id="user-info">
+        <img id="user-photo" src="" alt=""/>
+        <div class="uname" id="user-name"></div>
+        <div class="uemail" id="user-email"></div>
+        <button class="btn-lime" onclick="window.location.href='datain.html'">Open Dashboard →</button>
+        <button class="btn-ghost" id="signout-btn">Sign Out</button>
+      </div>
+    </div><!-- /signin-card -->
+  </div><!-- /hero -->
+
+  <!-- TICKER -->
+  <div class="ticker">
+    <div class="ticker-inner">
+      <span>💰 Total Tracked: ₹4,28,650</span>
+      <span>📈 Savings Rate: 32%</span>
+      <span>🍕 Food &amp; Dining: ₹12,400 / mo</span>
+      <span>⚡ Utilities: ₹3,200 / mo</span>
+      <span>🚗 Transport: ₹5,600 / mo</span>
+      <span>🛒 Shopping: ₹18,900 / mo</span>
+      <span>📊 Python Analytics Engine: LIVE</span>
+      <span>💰 Total Tracked: ₹4,28,650</span>
+      <span>📈 Savings Rate: 32%</span>
+      <span>🍕 Food &amp; Dining: ₹12,400 / mo</span>
+      <span>⚡ Utilities: ₹3,200 / mo</span>
+      <span>🚗 Transport: ₹5,600 / mo</span>
+      <span>🛒 Shopping: ₹18,900 / mo</span>
+      <span>📊 Python Analytics Engine: LIVE</span>
+    </div>
+  </div>
+
+  <!-- FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDFc3U-imil2VLvFuCFGVueoyN5CQw-Ob0",
+      authDomain: "expensetracman.firebaseapp.com",
+      projectId: "expensetracman",
+      storageBucket: "expensetracman.firebasestorage.app",
+      messagingSenderId: "506374951062",
+      appId: "1:506374951062:web:479ec46668ecbf66f072b7"
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const signinView = document.getElementById('signin-view');
+    const loadingView = document.getElementById('auth-loading');
+    const userInfo = document.getElementById('user-info');
+    const errMsg = document.getElementById('auth-error');
+
+    onAuthStateChanged(auth, user => {
+      signinView.style.display = 'none';
+      loadingView.style.display = 'none';
+      userInfo.style.display = 'none';
+      if (user) {
+        document.getElementById('user-photo').src = user.photoURL || '';
+        document.getElementById('user-name').textContent = user.displayName || 'User';
+        document.getElementById('user-email').textContent = user.email || '';
+        userInfo.style.display = 'block';
+      } else {
+        signinView.style.display = 'block';
+      }
+    });
+
+    document.getElementById('google-signin-btn').addEventListener('click', async () => {
+      errMsg.style.display = 'none';
+      signinView.style.display = 'none';
+      loadingView.style.display = 'block';
+      try {
+        await signInWithPopup(auth, provider);
+      } catch(e) {
+        loadingView.style.display = 'none';
+        signinView.style.display = 'block';
+        errMsg.style.display = 'block';
+      }
+    });
+
+    document.getElementById('signout-btn').addEventListener('click', () => signOut(auth));
+  </script>
+</body>
+</html>
